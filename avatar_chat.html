@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Natural TTS with ElevenLabs</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Remove scrollbars */
+        }
+
+        #avatar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #messages {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 90%;
+            max-height: 30%;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="avatar-container"></div>
+    <div id="messages">
+        <!-- Chat messages will appear here -->
+    </div>
+
+    <script>
+        // Connect to the WebSocket server
+        const socket = io("http://localhost:5000");
+
+        let avatar; // Variable to store the avatar
+
+        // Initialize Three.js for the 3D avatar
+        const container = document.getElementById("avatar-container");
+        const scene = new THREE.Scene();
+
+        // Add a white background
+        scene.background = new THREE.Color(0xffffff);
+
+        const camera = new THREE.PerspectiveCamera(
+            50,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Update camera and renderer on window resize
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Add lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 5, 5);
+        scene.add(light);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft ambient light
+        scene.add(ambientLight);
+
+        // Load the Ready Player Me avatar
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            "https://models.readyplayer.me/677aa65f2cf5a5e11a42dbb3.glb",
+            (gltf) => {
+                avatar = gltf.scene;
+                avatar.scale.set(1.5, 1.5, 1.5); // Scale the avatar
+                avatar.position.set(0, -1.5, 0); // Adjust position to center
+                avatar.rotation.y = 0; // Face the camera
+                scene.add(avatar);
+                console.log("Avatar loaded successfully.");
+            },
+            undefined,
+            (error) => {
+                console.error("Error loading avatar:", error);
+            }
+        );
+
+        // Adjust camera position for a full-page view
+        camera.position.set(0, 1, 2.5);
+
+        // Animate the scene
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Speak the text using ElevenLabs TTS
+        async function speak(text) {
+            try {
+                const response = await fetch("http://localhost:5000/tts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    console.error("Error generating TTS:", await response.json());
+                    return;
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Play the audio
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } catch (error) {
+                console.error("Error with TTS:", error);
+            }
+        }
+
+        // Append messages to the chat display
+        function appendMessage(sender, text) {
+            const messagesDiv = document.getElementById("messages");
+            const messageElement = document.createElement("p");
+            messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            messagesDiv.appendChild(messageElement);
+
+            // Auto-scroll to the latest message
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Handle new messages from the server
+        socket.on("new_message", (data) => {
+            const { message, response } = data;
+
+            // Append user message
+            appendMessage("User", message);
+
+            // Append LLM response and read it aloud
+            appendMessage("LLM", response);
+            speak(response);
+        });
+
+        // Test TTS button (example only)
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "t") {
+                speak("This is a test of text-to-speech.");
+            }
+        });
+    </script>
+</body>
+</html>
