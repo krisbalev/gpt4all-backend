@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Natural TTS with ElevenLabs</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -45,6 +45,7 @@
         const socket = io("http://localhost:5000");
 
         let avatar; // Variable to store the avatar
+        let mixer;  // For animations if needed
 
         // Initialize Three.js for the 3D avatar
         const container = document.getElementById("avatar-container");
@@ -59,7 +60,7 @@
             0.1,
             1000
         );
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
@@ -75,7 +76,7 @@
         light.position.set(0, 5, 5);
         scene.add(light);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft ambient
         scene.add(ambientLight);
 
         // Load the Ready Player Me avatar
@@ -86,8 +87,21 @@
                 avatar = gltf.scene;
                 avatar.scale.set(1.5, 1.5, 1.5); // Scale the avatar
                 avatar.position.set(0, -1.5, 0); // Adjust position to center
-                avatar.rotation.y = 0; // Face the camera
+                avatar.rotation.y = 0;           // Face the camera
                 scene.add(avatar);
+
+                // 2) Replace "RightArm" / "LeftArm" below with what you see in the console
+                const rightArm = avatar.getObjectByName("RightArm");
+                const leftArm = avatar.getObjectByName("LeftArm");
+
+                // Lower arms (if these bones exist in your model)
+                if (rightArm) {
+                    rightArm.rotation.x = +1.2; 
+                }
+                if (leftArm) {
+                    leftArm.rotation.x = +1.2;
+                }
+
                 console.log("Avatar loaded successfully.");
             },
             undefined,
@@ -100,8 +114,10 @@
         camera.position.set(0, 1, 2.5);
 
         // Animate the scene
+        const clock = new THREE.Clock(); // for animations if needed
         function animate() {
             requestAnimationFrame(animate);
+            // if(mixer) mixer.update(clock.getDelta()); // update idle animation
             renderer.render(scene, camera);
         }
         animate();
@@ -146,11 +162,8 @@
         socket.on("new_message", (data) => {
             const { message, response } = data;
 
-            // Append user message
-            // appendMessage("User", message);
-
             // Append LLM response and read it aloud
-            appendMessage("Chris, the Virtual Human", response);
+            appendMessage("Johnny Bravo", response);
             speak(response);
         });
 
