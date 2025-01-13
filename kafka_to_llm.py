@@ -29,10 +29,10 @@ def process_message(spoken_text, cues):
 
         # Decide what to send based on input
         if spoken_text.strip():
-            message_to_llm = "Respond with a greeting to the following text: " + spoken_text
+            message_to_llm = "Respond with a simple greeting to the following text: " + spoken_text
         else:
             # message_to_llm = f"Respond with a single short greeting to these non-verbal cues: {', '.join(cues)}"
-            message_to_llm = f"Respond with a single short greeting to a person who approaches you with a {cues[0]}."
+            message_to_llm = f"Respond with a single short and simple greeting to a person who approaches you with a {cues[0]}."
 
         print(f"Sending to LLM: {message_to_llm}")
 

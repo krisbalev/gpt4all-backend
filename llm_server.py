@@ -10,7 +10,7 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # ElevenLabs API configuration
-ELEVENLABS_API_KEY = "sk_d355d3f12d5827eb53a0ce3cde15b55cca576255a0df7aae"
+ELEVENLABS_API_KEY = "sk_bfdea038dcac403aaf53d3bae2a07012dea889f673b9f740"
 ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech"
 VOICE_ID = "iP95p4xoKVk53GoZ742B"  # Your provided voice ID
 
